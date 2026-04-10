@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200">
+  <defs>
+    <linearGradient id="fireGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff1a1a"/>
+      <stop offset="40%" style="stop-color:#ff6600"/>
+      <stop offset="70%" style="stop-color:#ffaa00"/>
+      <stop offset="100%" style="stop-color:#ff4400"/>
+    </linearGradient>
+    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#666"/>
+      <stop offset="50%" style="stop-color:#999"/>
+      <stop offset="100%" style="stop-color:#444"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  <!-- Background racing stripes -->
+  <rect x="0" y="85" width="600" height="4" fill="url(#fireGrad)" opacity="0.15"/>
+  <rect x="0" y="110" width="600" height="4" fill="url(#fireGrad)" opacity="0.15"/>
+  <!-- Speed lines -->
+  <line x1="0" y1="95" x2="80" y2="95" stroke="#ff4400" stroke-width="2" opacity="0.3"/>
+  <line x1="0" y1="105" x2="60" y2="105" stroke="#ff6600" stroke-width="1.5" opacity="0.25"/>
+  <line x1="520" y1="95" x2="600" y2="95" stroke="#ff4400" stroke-width="2" opacity="0.3"/>
+  <line x1="540" y1="105" x2="600" y2="105" stroke="#ff6600" stroke-width="1.5" opacity="0.25"/>
+  <!-- Checkered flag accent -->
+  <g opacity="0.12">
+    <rect x="0" y="0" width="15" height="15" fill="#fff"/>
+    <rect x="15" y="15" width="15" height="15" fill="#fff"/>
+    <rect x="570" y="0" width="15" height="15" fill="#fff"/>
+    <rect x="585" y="15" width="15" height="15" fill="#fff"/>
+  </g>
+  <!-- Main title: TURBO -->
+  <text x="300" y="95" text-anchor="middle" font-family="'Bebas Neue',Impact,sans-serif" font-size="90" font-weight="900" fill="url(#fireGrad)" filter="url(#glow)" letter-spacing="8">TURBO</text>
+  <!-- Subtitle: DRIFT -->
+  <text x="300" y="148" text-anchor="middle" font-family="'Orbitron',monospace,sans-serif" font-size="42" font-weight="700" fill="url(#metalGrad)" filter="url(#shadow)" letter-spacing="14">D R I F T</text>
+  <!-- 3D badge -->
+  <g transform="translate(480,55)">
+    <rect x="0" y="0" width="42" height="22" rx="4" fill="none" stroke="url(#fireGrad)" stroke-width="1.5"/>
+    <text x="21" y="16" text-anchor="middle" font-family="'Orbitron',monospace" font-size="13" font-weight="900" fill="url(#fireGrad)">3D</text>
+  </g>
+  <!-- Tagline -->
+  <text x="300" y="178" text-anchor="middle" font-family="'Rajdhani',sans-serif" font-size="14" fill="#555" letter-spacing="6">RACING EXPERIENCE</text>
+  <!-- Car silhouette -->
+  <path d="M230,168 L240,162 L260,158 L280,155 L310,155 L330,158 L345,155 L360,158 L370,162 L375,168 Z" fill="url(#fireGrad)" opacity="0.08"/>
+</svg>
