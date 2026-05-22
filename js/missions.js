@@ -22,7 +22,7 @@ export function renderMissions(container, stats, completed) {
     d.className = 'mission' + (done ? ' done' : '');
     d.innerHTML = `<div class="mtitle">${m.icon} ${m.title}</div><div class="mdesc">${m.desc}</div>
       <div class="mprog"><div class="mbar"><div class="mfill" style="width:${pct}%"></div></div>
-      <div class="mval">${done ? '✓' : (m.compare === 'lt' ? (val > 0 ? (val/1000).toFixed(1)+'s' : '-') : Math.floor(val)+'/'+m.target)}</div></div>
+      <div class="mval">${done ? '✓' : (m.compare === 'lt' ? (val > 0 ? val.toFixed(1)+'s' : '-') : Math.floor(val)+'/'+m.target)}</div></div>
       <div class="mreward">🪙 ${m.coins}</div>`;
     container.appendChild(d);
   });

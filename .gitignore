@@ -1,0 +1,30 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local Claude Code config
+.claude/
+
+# Editor configs
+.vscode/
+.idea/
+
+# Build artifacts (not used here but defensive)
+node_modules/
+dist/
+build/
+
+# Local-only files
+.env
+.env.local
+
+# Legacy / duplicate files kept locally but not pushed
+turbo_drift_3d_v3.html
+turbo_drift_README.md
+turbo_drift_logo.svg
