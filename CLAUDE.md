@@ -194,3 +194,26 @@ These are real footguns that have bitten people working on this code. Confirm a 
 - The minimap is centered on the player (car at center, world rotates relative to it). Track is drawn at fixed orientation, not rotated with car heading.
 - The vignette (`.vig`) and damage overlay (`#dmg`) are CSS-only DOM elements outside the canvas.
 - `pixelRatio` is clamped to `min(GFX.pixRatio, window.devicePixelRatio)` — Ultra preset's 2.5 only applies on hi-DPI displays.
+- **Three.js r128 readonly trap:** `Object.assign(mesh, { position: vec3 })` throws because `position` is a getter-only property on Object3D. Always use `mesh.position.set(x, y, z)` or `mesh.position.copy(vec3)`. The helper `mk()` in `cars.js` follows this safe pattern.
+
+---
+
+## 11. Git / GitHub workflow
+
+**Remote:** `https://github.com/DrummingBird1/TurboDrift.git` (branch `main`)
+
+**Push policy — automatic after major updates:** After completing any large feature, bug-fix sweep, or refactor, **push the changes to GitHub without waiting to be asked**. The user has standing approval for this. A "major" update is anything the user would describe as a milestone: multiple files modified together, a new feature, a critical bug fix, or substantial refactor. Trivial single-file tweaks, in-progress experiments, or doc edits in isolation usually do not warrant a push — use judgment.
+
+**Standard flow:**
+```powershell
+git -C "D:/AI/Claude/turbo-drift" add <files>
+git -C "D:/AI/Claude/turbo-drift" commit -m "<descriptive message>"
+git -C "D:/AI/Claude/turbo-drift" push origin main
+```
+
+**Important config notes:**
+- The repo has a per-repo `user.email` set to `DrummingBird1@users.noreply.github.com` because GitHub blocks pushes with the user's private email. **Do not** revert to the global email when committing — it will get rejected.
+- Working-dir ownership exception is registered: `git config --global --add safe.directory D:/AI/Claude/turbo-drift`.
+- `.gitignore` excludes `.claude/`, legacy duplicates (`turbo_drift_3d_v3.html`, `turbo_drift_README.md`, `turbo_drift_logo.svg`), and `node_modules`/`.env`. Keep it that way.
+
+**Commit message style:** Short imperative title, then a body grouping changes by type (Bug fixes / New features / Infrastructure). See `804e052` for an example.
