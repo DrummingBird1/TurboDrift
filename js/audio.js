@@ -138,10 +138,17 @@ export function sfx(type, intensity) {
     const g = ctx.createGain(); g.gain.setValueAtTime(.1, t); g.gain.exponentialRampToValueAtTime(.001, t + .7);
     o.connect(g); g.connect(master); o.start(); o.stop(t + .8);
   } else if (type === 'gear') {
+    // Upshift: quick clutch click + engine rev blip
     const o = ctx.createOscillator(); o.type = 'square';
-    o.frequency.setValueAtTime(350, t); o.frequency.exponentialRampToValueAtTime(150, t + .06);
-    const g = ctx.createGain(); g.gain.setValueAtTime(.08, t); g.gain.exponentialRampToValueAtTime(.001, t + .08);
+    o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(150, t + .06);
+    const g = ctx.createGain(); g.gain.setValueAtTime(.07, t); g.gain.exponentialRampToValueAtTime(.001, t + .08);
     o.connect(g); g.connect(master); o.start(); o.stop(t + .12);
+    // rev blip layer
+    const r = ctx.createOscillator(); r.type = 'sawtooth';
+    r.frequency.setValueAtTime(180, t); r.frequency.exponentialRampToValueAtTime(420, t + .05); r.frequency.exponentialRampToValueAtTime(220, t + .14);
+    const rg = ctx.createGain(); rg.gain.setValueAtTime(.05, t); rg.gain.exponentialRampToValueAtTime(.001, t + .16);
+    const rf = ctx.createBiquadFilter(); rf.type = 'lowpass'; rf.frequency.value = 1200;
+    r.connect(rf); rf.connect(rg); rg.connect(master); r.start(); r.stop(t + .18);
   } else if (type === 'beep') {
     const o = ctx.createOscillator(); o.frequency.value = intensity || 440;
     const g = ctx.createGain(); g.gain.setValueAtTime(.18, t); g.gain.exponentialRampToValueAtTime(.001, t + .3);

@@ -63,7 +63,26 @@
     <div class="mpanel" id="pCar">
       <div class="stitle">SELECT YOUR RIDE</div>
       <div class="cargrid" id="carGrid"></div>
-      <button class="mbtn pri" onclick="G.beginRace()">RACE!</button>
+
+      <div class="seclabel">🏁 מסלול</div>
+      <div class="trackgrid" id="trackGrid"></div>
+
+      <div class="seclabel">מצב</div>
+      <div class="segrow" id="modeRow">
+        <button class="seg on" data-v="circuit" onclick="G.setMode('circuit')">מירוץ</button>
+        <button class="seg" data-v="timetrial" onclick="G.setMode('timetrial')">נגד הזמן</button>
+        <button class="seg" data-v="free" onclick="G.setMode('free')">חופשי</button>
+      </div>
+
+      <div class="seclabel">הקפות</div>
+      <div class="segrow" id="lapsRow">
+        <button class="seg" data-v="2" onclick="G.setLaps(2)">2</button>
+        <button class="seg on" data-v="3" onclick="G.setLaps(3)">3</button>
+        <button class="seg" data-v="5" onclick="G.setLaps(5)">5</button>
+        <button class="seg" data-v="10" onclick="G.setLaps(10)">10</button>
+      </div>
+
+      <button class="mbtn pri" onclick="G.beginRace()" style="margin-top:14px">RACE!</button>
       <button class="backb" onclick="G.showP('pMain')">← BACK</button>
     </div>
 
@@ -152,7 +171,20 @@
 <div id="pauseM">
   <h2>PAUSED</h2>
   <button class="mbtn pri" onclick="G.resume()" style="pointer-events:all">RESUME</button>
+  <button class="mbtn" onclick="G.restartRace()" style="pointer-events:all">RESTART RACE</button>
   <button class="mbtn" onclick="G.toMenu()" style="pointer-events:all">QUIT TO MENU</button>
+</div>
+
+<!-- ====== RACE RESULTS ====== -->
+<div id="raceResults">
+  <div class="rrBox">
+    <div class="rrPlace" id="rrPlace">🏁</div>
+    <div class="rrTime" id="rrTime"></div>
+    <div class="rrBest" id="rrBest"></div>
+    <div class="rrCoins" id="rrCoins"></div>
+    <button class="mbtn pri" onclick="G.raceAgain()" style="pointer-events:all">RACE AGAIN</button>
+    <button class="mbtn" onclick="G.toMenu()" style="pointer-events:all">MENU</button>
+  </div>
 </div>
 
 <!-- ====== OVERLAYS ====== -->
@@ -172,6 +204,7 @@
   <div id="speedo"><div id="spdV">0</div><div id="spdU">KM/H</div><div id="gearD">N</div></div>
   <div id="rpmO"><div id="rpmI"></div></div>
   <div id="lapB"><h3>⏱ LAP TIME</h3><div id="lapT">00:00.00</div><div id="bestT">BEST: --:--.--</div><div id="lapC">LAP: 0</div></div>
+  <div id="posInd"></div>
   <div id="nitL">N I T R O</div>
   <div id="nitO"><div id="nitI"></div></div>
   <div id="hpL">H P</div>
@@ -197,6 +230,14 @@
 
 <!-- ====== SCRIPTS ====== -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- Post-processing (bloom). Optional — game falls back to CSS bloom if these fail to load. -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/MaskPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 <script type="module" src="js/game.js"></script>
 <script>
   if ('serviceWorker' in navigator) {

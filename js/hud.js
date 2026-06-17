@@ -10,7 +10,17 @@ export function updateHUD(state, gfx) {
   document.getElementById('nitI').style.width = state.nitro + '%';
   if (state.curLap > 0) document.getElementById('lapT').textContent = fmt(performance.now() - state.lapSt);
   if (state.bestLap < Infinity) document.getElementById('bestT').textContent = 'BEST: ' + fmt(state.bestLap);
-  document.getElementById('lapC').textContent = 'LAP: ' + state.totalLaps;
+  document.getElementById('lapC').textContent = 'LAP: ' + state.totalLaps + (state.raceLaps ? '/' + state.raceLaps : '');
+
+  // Race position (circuit only)
+  const posEl = document.getElementById('posInd');
+  if (posEl) {
+    if (state.raceMode === 'circuit' && state.racePos > 0) {
+      posEl.style.opacity = '1';
+      posEl.textContent = 'P ' + state.racePos + '/' + state.raceTotal;
+      posEl.style.color = state.racePos === 1 ? '#ffd700' : '#fff';
+    } else posEl.style.opacity = '0';
+  }
 
   const df = document.getElementById('dftT');
   if (state.isDrift && state.dScore > 50) {
@@ -39,8 +49,8 @@ export function updateHUD(state, gfx) {
   if (gfx.spdLines) document.getElementById('spdLines').style.opacity = Math.min(1, Math.abs(state.spd) / 2);
   else document.getElementById('spdLines').style.opacity = '0';
 
-  // Bloom-ish brightness
-  if (gfx.bloom) {
+  // Bloom-ish brightness (CSS fallback only — skip when real post-processing bloom is active)
+  if (gfx.bloom && !gfx.realBloom) {
     const bl = Math.min(1.5, Math.abs(state.spd) * .3);
     const nit = state.nitroActive ? 1.15 : 1;
     document.getElementById('gc').style.filter = `brightness(${(1 + bl * .08) * nit}) contrast(${1 + bl * .03}) saturate(${1 + bl * .05})`;

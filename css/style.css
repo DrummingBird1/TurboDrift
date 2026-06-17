@@ -202,3 +202,32 @@ canvas#gc{display:block;width:100vw;height:100vh;position:fixed;top:0;left:0}
 /* ===== DEBUG OVERLAY ===== */
 #debugO{position:fixed;top:160px;right:14px;z-index:100;background:rgba(0,0,0,.7);color:#0f0;font-family:'Courier New',monospace;font-size:11px;padding:8px 12px;border-radius:4px;border:1px solid rgba(0,255,0,.2);display:none;pointer-events:none;line-height:1.5;min-width:170px;backdrop-filter:blur(4px)}
 #debugO div{white-space:nowrap}
+
+/* ===== TRACK / MODE / LAPS SELECTORS ===== */
+.seclabel{font-family:'Orbitron',monospace;font-size:9px;color:rgba(255,255,255,.4);letter-spacing:2px;margin:12px 0 4px}
+.trackgrid{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;max-width:420px}
+.trackcard{width:120px;padding:10px 6px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px;cursor:pointer;transition:all .25s;text-align:center}
+.trackcard:hover{border-color:rgba(255,80,30,.4)}
+.trackcard.sel{border-color:rgba(255,80,30,.6);background:rgba(255,80,30,.08);box-shadow:0 0 14px rgba(255,50,0,.15)}
+.trackcard .ti{font-size:24px}
+.trackcard .tn{font-family:'Orbitron',monospace;font-size:8px;color:rgba(255,255,255,.7);letter-spacing:.5px;margin-top:3px}
+.segrow{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.seg{font-family:'Orbitron',monospace;font-size:10px;padding:7px 16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:rgba(255,255,255,.5);cursor:pointer;transition:all .2s;letter-spacing:1px}
+.seg:hover{border-color:rgba(255,80,30,.4);color:#fff}
+.seg.on{border-color:rgba(255,80,30,.6);color:#fff;background:rgba(255,80,30,.12)}
+
+/* ===== RACE POSITION HUD ===== */
+#posInd{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-family:'Orbitron',monospace;font-size:30px;font-weight:900;color:#fff;text-shadow:0 0 16px rgba(0,0,0,.8);opacity:0;transition:opacity .3s;letter-spacing:1px}
+
+/* ===== RACE RESULTS ===== */
+#raceResults{position:fixed;inset:0;z-index:160;background:rgba(0,0,0,.88);display:none;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
+.rrBox{display:flex;flex-direction:column;align-items:center;animation:mfade .5s ease}
+.rrPlace{font-family:'Bebas Neue',sans-serif;font-size:64px;color:#ffd700;text-shadow:0 0 40px rgba(255,200,0,.5);letter-spacing:3px;margin-bottom:8px}
+.rrTime{font-family:'Orbitron',monospace;font-size:16px;color:rgba(255,255,255,.85);margin:4px}
+.rrBest{font-family:'Orbitron',monospace;font-size:13px;color:rgba(255,255,255,.5);margin:2px}
+.rrCoins{font-family:'Orbitron',monospace;font-size:22px;color:#ffcc00;text-shadow:0 0 12px rgba(255,200,0,.4);margin:12px 0 18px}
+
+@media (pointer:coarse), (max-width:700px) {
+  #posInd{top:auto;bottom:120px;font-size:22px}
+  .rrPlace{font-size:48px}
+}
