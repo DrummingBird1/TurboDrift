@@ -148,18 +148,22 @@ Hardcoded in `game.js:172` and `physics.js:7`:
 
 These are real footguns that have bitten people working on this code. Confirm a fix matches the spirit of the design before sweeping refactors.
 
-- **Persistence is broken in plain browsers.** `storage.js` expects `window.storage` (a non-standard async API). Without it, all writes go to a per-tab `_mem` object and disappear on refresh. Users get "guest"-like persistence even when registered.
-- **Passwords are plaintext.** `auth.js` stores `data.pass = p` and compares with `===`. Not safe for any real deployment. If you're hardening this, see the suggestions doc.
-- **`getAvailableCars()` in `game.js:73` is dead/inconsistent code.** Its body returns only free cars, but its comment says "first 3 + owned". `renderCarGrid()` doesn't actually use it — it filters in its own callback. The `G.selCar(i)` exposed to HTML uses `getAvailableCars()`, but nothing in the current HTML calls `G.selCar` (carcards bind their own `onclick`). Treat `getAvailableCars` as unused.
-- **`updateStats()` runs every frame** with `{ speed: S.kmh }`, awaiting `dbGet` / `dbSet` and running mission/achievement checks each time. This is one of the hottest paths in the game and a major perf concern (and lots of storage churn).
-- **Music interval can leak.** `audio.stopMusic()` flips `musicPlaying = false` but doesn't `clearInterval(musicNodes._loopId)`. The interval no-ops until it self-clears at the next tick (up to `beat*8` seconds later). When the user mashes `M`, intervals can briefly overlap.
-- **Engine oscillators never stop.** They're created in `audio.init()`, `.start()`-ed once, and only their gain is ducked to 0. Repeated `init()` calls (currently guarded by `isReady()`) would compound this.
-- **Particle pool size is fixed at first init.** `GFX.partMax` changes do nothing to the mesh count after `particles.init()` runs — only the visibility cap (`lim`) changes. Switching to Ultra mid-game does NOT allocate more particles.
-- **`carObj.wheels.rotation.x += S.spd * 3`** in `game.js:274` is frame-rate dependent (no `dt`). Same with parts of `physics.js` (angular velocity decay constants).
-- **Lap detection is radius-based** (`world.js:170`). At very high speeds with low frame rate, a car could skip past the trigger ring and miss a lap.
-- **Three.js r128 is from 2021.** Many newer APIs (e.g., better PBR, USE_LOGDEPTHBUF improvements) aren't available. Be cautious copy-pasting Three.js code from modern docs.
-- **Hebrew UI strings live in HTML, not a translation table.** Edits that touch user-facing copy must be made directly in `index.html` / `about.html` / message strings in JS modules.
-- **`turbo_drift_3d_v3.html` is legacy.** It duplicates ~50% of the modular code in inline form. Do not propagate fixes there unless explicitly asked.
+- **Service worker is network-first for HTML/JS/CSS.** `sw.js` serves same-origin `.html`/`.js`/`.css` and navigations network-first (cache-first only for fonts/CDN libs). This is deliberate — an earlier cache-first version served a **stale `index.html`** so code changes didn't appear until two reloads. If you change caching, keep code updates landing immediately. Bump `CACHE` (`turbo-drift-vN`) when you change the asset list.
+- **`updateStats()` is gone — stats are batched.** Per-frame data accumulates in `pendingStats` and flushes every ~2s / on lap via `flushStats()` (`game.js`). `statsCache` holds the user record in memory. Don't reintroduce per-frame `dbGet`/`dbSet`.
+- **Engine oscillators never stop.** Created in `audio.init()`, `.start()`-ed once, only their gain is ducked to 0. `init()` is guarded by `isReady()`. `muteEngine()` ducks gain on pause/menu.
+- **Particle pool is pre-allocated at 800** (`particles.init(THREE, scene, 800)` in `game.js`). `GFX.partMax` only changes the per-frame visibility cap, not the mesh count — so switching presets mid-game is safe and allocates nothing.
+- **Lap detection is radius-based** (`world.checkLap`) with a 5s/lap minimum guard. At very high speed + low frame rate a car could skip the trigger ring. Race finish (`game.js`) reads `S.totalLaps` produced by this, so the same caveat applies.
+- **Three.js r128 readonly trap** (see §10) — `Object.assign(mesh, {position})` throws. This already bit the car builder; the `mk()` helper in `cars.js` is the safe pattern.
+- **Bloom is optional.** `index.html` loads `EffectComposer`/`UnrealBloomPass` from jsdelivr as classic scripts before the module. `setupComposer()` feature-checks `THREE.EffectComposer` && co. and falls back to the CSS-filter bloom in `hud.js` if they're absent. `GFX.realBloom` gates which path runs (and tells `hud.js` to skip the CSS filter).
+- **Three.js r128 is from 2021.** Newer APIs aren't available. Be cautious copy-pasting modern Three.js docs.
+- **Hebrew UI strings live in HTML**, not a translation table. Edits to user-facing copy go directly in `index.html` / `about.html` / JS message strings.
+- **`turbo_drift_3d_v3.html` is legacy** and `.gitignore`d. Do not propagate fixes there unless explicitly asked.
+
+### Resolved (do not "re-fix")
+- **Persistence** now uses real `localStorage` (`storage.js`, `td3d_` prefix) with `window.storage`/in-memory fallback. Saves survive refresh.
+- **Passwords** are SHA-256 + per-user salt (`auth.js`), with one-time migration from any legacy plaintext `data.pass`. Never store plaintext.
+- **Music interval leak** fixed — `stopMusic()` calls `clearInterval(loopHandle)`.
+- **`getAvailableCars()`** removed; `renderCarGrid()` is the single source of truth for the car grid (owned + free shown, locked cars route to shop).
 
 ---
 
@@ -181,17 +185,22 @@ These are real footguns that have bitten people working on this code. Confirm a 
 - **Adding a HUD element** → markup in `index.html` (`#hud`), styling in `css/style.css`, update logic in `js/hud.js`.
 - **Adding a track element** → `js/world.js`, push to `colls[]` for collision.
 - **Camera tweaks** → `updateCam()` in `js/game.js:206`.
-- **A new music track** → add a `play<Name>` function in `audio.js`, append name to `TRACKS[]`, branch in `startMusic`.
+- **A new music track** → add a `play<Name>` function in `audio.js`, append name to `TRACKS[]`, branch in `startMusic` (there are 5: Night Drive, Neon Rush, Midnight Cruise, Cyber Highway, Retro Wave).
 - **A new achievement** → push to `ACHS[]` in `achievements.js`. The condition is a function over the `stats` object.
 - **Graphics quality presets** → `setGfxPreset` in `js/menu.js`.
+- **A new race track** → append to `TRACKS[]` in `world.js` (`{ id, name, icon, r(t), fog, ground, road, rim, defaultRain }`). `r(t)` is the radius function; everything else (road, city, boost pads, lap line) derives from it. The car-select grid renders track cards automatically.
+- **Race rules / rewards / finish** → `beginRace` + `finishRace` + `computePosition` in `game.js`. Modes: `circuit` (vs 3 AI, live position), `timetrial` (solo + ghost), `free` (endless). Lap target is `RACE.laps`.
+- **Bloom / post-processing** → `setupComposer` + `renderFrame` in `game.js`; bloom scripts are in `index.html` (and cached in `sw.js`).
 
 ---
 
 ## 10. Quick gotchas
 
 - `kmh` is `|spd| * 120` — speed thresholds in missions (200/300 km/h) translate to `spd ≈ 1.67 / 2.5`.
-- Cars are filtered out of the car select grid if not owned and not free — there's no "locked" preview state. To change this, edit `renderCarGrid` in `game.js:78`.
-- The minimap is centered on the player (car at center, world rotates relative to it). Track is drawn at fixed orientation, not rotated with car heading.
+- Locked (unowned, non-free) cars **are** shown in the car-select grid greyed out; clicking one routes to the shop. Owned + free cars are selectable. Logic is in `renderCarGrid` (`game.js`).
+- The world is rebuilt into a disposable `worldGroup` on every `world.generate()` (track switch). The player car, ghost, AI cars and particle pool are separate objects added straight to the scene — they survive regeneration; only `worldGroup` is disposed.
+- The minimap is centered on the player and also plots boost pads, AI cars, and the ghost.
+- The vignette (`.vig`) and damage overlay (`#dmg`) are CSS-only DOM elements outside the canvas.
 - The vignette (`.vig`) and damage overlay (`#dmg`) are CSS-only DOM elements outside the canvas.
 - `pixelRatio` is clamped to `min(GFX.pixRatio, window.devicePixelRatio)` — Ultra preset's 2.5 only applies on hi-DPI displays.
 - **Three.js r128 readonly trap:** `Object.assign(mesh, { position: vec3 })` throws because `position` is a getter-only property on Object3D. Always use `mesh.position.set(x, y, z)` or `mesh.position.copy(vec3)`. The helper `mk()` in `cars.js` follows this safe pattern.
