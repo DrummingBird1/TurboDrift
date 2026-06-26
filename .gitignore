@@ -11,6 +11,10 @@ npm-debug.log*
 # Local Claude Code config
 .claude/
 
+# AI dev-tooling docs — kept local, not published (contain local paths/workflow)
+CLAUDE.md
+AGENTS.md
+
 # Editor configs
 .vscode/
 .idea/
