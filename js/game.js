@@ -23,13 +23,18 @@ let selCarIdx = 0, selTrackIdx = 0;
 const K = {};
 const GFX = { shad:true, part:true, shk:true, spdLines:true, bloom:true, rain:true, debug:false, realBloom:false, shadowRes:2048, pixRatio:2, drawDist:.0018, partMax:400, preset:'high' };
 const CFG = { sfx:true, eng:true, vol:.6 };
+const CTRL = { fov:68, steer:1.0, invert:false, diff:'medium' };
+const DIFF = { easy:{ base:.62, band:.10 }, medium:{ base:.74, band:.16 }, hard:{ base:.86, band:.22 } };
 const S = {
   p:null, v:null, a:0, av:0, hp:100, spd:0, gear:1, rpm:0, isDrift:false, dScore:0, driftToSave:0,
   nitro:100, kmh:0, shake:{x:0,y:0}, lapSt:0, bestLap:Infinity, curLap:0, crossed:false, totalLaps:0,
   hpCooldown:0, boostT:0, nitroActive:false, crashFrame:false, totalDist:0,
-  gp:null, touch:null, raceLaps:0, racePos:0, raceTotal:0, raceMode:'circuit'
+  gp:null, touch:null, raceLaps:0, racePos:0, raceTotal:0, raceMode:'circuit',
+  steerMul:1.0, steerInv:false
 };
 const RACE = { mode:'circuit', laps:3, active:false, finished:false, startTime:0 };
+const CHAMP = { active:false, round:0, order:[0,1,2], pts:{ player:0, ai:[0,0,0] } };
+const CHAMP_PTS = [10, 6, 4, 2]; // points for 1st..4th
 const nitroRef = { val: 100 };
 let camMode = 0;
 let lastStatsFlush = 0;
@@ -48,8 +53,14 @@ window.G = {
   setGfx: (p) => { setGfxPreset(p, GFX, renderer, scene); applyBloomState(); },
   setVol: (v) => { CFG.vol = v / 100; audio.setVolume(CFG.vol); saveSettings(null, CFG); },
   setColor: setCarColor,
-  beginRace, resume, toMenu, logout, restartRace, raceAgain
+  setFov: (v) => { CTRL.fov = +v; const o = document.getElementById('fovVal'); if (o) o.textContent = Math.round(v); saveCtrl(); },
+  setSteer: (v) => { CTRL.steer = +v / 100; const o = document.getElementById('steerVal'); if (o) o.textContent = (+v / 100).toFixed(2) + '×'; saveCtrl(); },
+  setInvert: (el) => { el.classList.toggle('on'); CTRL.invert = el.classList.contains('on'); saveCtrl(); },
+  setDiff,
+  beginRace, resume, toMenu, logout, restartRace, raceAgain, nextChampRace
 };
+
+function saveCtrl() { saveSettings(null, null, CTRL); }
 
 // ========== AUTH ==========
 setupAuth(async (username) => {
@@ -166,31 +177,43 @@ function renderCarGrid() {
 
 // ===== Track / mode / laps select =====
 function renderTrackSelect() {
+  const champ = RACE.mode === 'championship';
   const tg = document.getElementById('trackGrid');
   if (tg) {
     tg.innerHTML = '';
     world.TRACKS.forEach((t, i) => {
       const d = document.createElement('div');
-      d.className = 'trackcard' + (i === selTrackIdx ? ' sel' : '');
-      d.onclick = () => G.selTrack(i);
+      d.className = 'trackcard' + (i === selTrackIdx && !champ ? ' sel' : '') + (champ ? ' dim' : '');
+      d.onclick = () => { if (!champ) G.selTrack(i); };
       d.innerHTML = `<div class="ti">${t.icon}</div><div class="tn">${t.name}</div>`;
       tg.appendChild(d);
     });
   }
+  const lr = document.getElementById('lapsRow'); if (lr) lr.style.opacity = champ ? '.4' : '1';
+  const tl = document.getElementById('trackLabel'); if (tl) tl.textContent = champ ? '🏆 כל המסלולים (סדרה)' : '🏁 מסלול';
   document.querySelectorAll('#lapsRow .seg').forEach(b => b.classList.toggle('on', +b.dataset.v === RACE.laps));
   document.querySelectorAll('#modeRow .seg').forEach(b => b.classList.toggle('on', b.dataset.v === RACE.mode));
+  document.querySelectorAll('#diffRow .seg').forEach(b => b.classList.toggle('on', b.dataset.v === CTRL.diff));
 }
 
 function selTrack(i) {
   if (i === selTrackIdx) return;
   selTrackIdx = i;
   world.generate(THREE, scene, GFX, selTrackIdx);
+  clearSkids();
   buildCar();
   renderTrackSelect();
 }
 
 function setLaps(n) { RACE.laps = n; renderTrackSelect(); }
-function setMode(m) { RACE.mode = m; renderTrackSelect(); }
+function setMode(m) { RACE.mode = m; if (m === 'championship') RACE.laps = 3; renderTrackSelect(); }
+function setDiff(d) { CTRL.diff = d; saveCtrl(); renderTrackSelect(); }
+
+function applyCtrlUI() {
+  const fs = document.getElementById('fovSlider'); if (fs) { fs.value = CTRL.fov; const o = document.getElementById('fovVal'); if (o) o.textContent = Math.round(CTRL.fov); }
+  const ss = document.getElementById('steerSlider'); if (ss) { ss.value = Math.round(CTRL.steer * 100); const o = document.getElementById('steerVal'); if (o) o.textContent = CTRL.steer.toFixed(2) + '×'; }
+  const inv = document.getElementById('tInv'); if (inv) inv.classList.toggle('on', !!CTRL.invert);
+}
 
 // Buy car event
 document.addEventListener('buy-car', async (e) => {
@@ -284,6 +307,7 @@ function init3D() {
   particles.init(THREE, scene, 800);
   buildCar();
   buildGhost();
+  initSkids();
   setupComposer();
 
   window.addEventListener('keydown', e => {
@@ -370,11 +394,40 @@ function buildGhost() {
   ghostObj = g;
 }
 
+// ===== SKID MARKS (pooled, fade over time) =====
+let skidPool = [], skidPtr = 0;
+function initSkids() {
+  const geo = new THREE.PlaneGeometry(0.5, 0.5);
+  for (let i = 0; i < 260; i++) {
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x080808, transparent: true, opacity: 0, depthWrite: false }));
+    m.rotation.x = -Math.PI / 2; m.position.y = 0.045; m.visible = false;
+    scene.add(m); skidPool.push(m);
+  }
+}
+function layStripe() {
+  if (!carObj || !skidPool.length) return;
+  for (const wi of [2, 3]) {
+    const wp = new THREE.Vector3(); carObj.wheels[wi].getWorldPosition(wp);
+    const m = skidPool[skidPtr];
+    skidPtr = (skidPtr + 1) % skidPool.length;
+    m.position.set(wp.x, 0.045, wp.z);
+    m.material.opacity = 0.5;
+    m.visible = true;
+  }
+}
+function fadeSkids(dt) {
+  for (const m of skidPool) {
+    if (m.visible) { m.material.opacity -= dt * 0.05; if (m.material.opacity <= 0) m.visible = false; }
+  }
+}
+function clearSkids() { for (const m of skidPool) { m.visible = false; m.material.opacity = 0; } }
+
 function spawnAiCars(count) {
   aiCars.forEach(c => scene.remove(c.group));
   aiCars = [];
   if (count <= 0) return;
   const colors = [0x00aaff, 0xffaa00, 0xff00aa, 0x00ff88];
+  const d = DIFF[CTRL.diff] || DIFF.medium;
   for (let i = 0; i < count; i++) {
     const carData = ALL_CARS[1 + (i % (ALL_CARS.length - 1))];
     const built = buildCarModel(THREE, carData, colors[i % colors.length]);
@@ -382,17 +435,25 @@ function spawnAiCars(count) {
     built.group.position.set(start.x + (i - count / 2) * 4, .5, start.z + 2);
     built.group.rotation.y = start.angle;
     scene.add(built.group);
+    const baseMax = carData.ms * (d.base + Math.random() * .10);
     aiCars.push({
       group: built.group, wheels: built.wheels,
       x: built.group.position.x, z: built.group.position.z, a: start.angle,
       spd: 0, targetIdx: 1, lap: 0,
-      maxSpd: carData.ms * (.72 + Math.random() * .16)
+      maxSpd: baseMax, baseMax, band: d.band, idx: i
     });
   }
 }
 
 function updateAiCars(dt) {
+  const playerProg = S.totalLaps + world.trackFrac(S.p);
   for (const ai of aiCars) {
+    // Rubber-banding: ease maxSpd toward base, nudged by gap to player
+    const aiProg = ai.lap + ai.targetIdx / world.trackPts.length;
+    const gap = playerProg - aiProg; // >0 player ahead → AI catches up
+    const factor = 1 + ai.band * Math.max(-0.6, Math.min(1, gap));
+    ai.maxSpd = ai.baseMax * factor;
+
     const target = world.trackPts[ai.targetIdx];
     const dx = target.x - ai.x, dz = target.z - ai.z;
     const dist = Math.sqrt(dx * dx + dz * dz);
@@ -446,7 +507,7 @@ function updateCam() {
     camera.lookAt(S.p);
   }
   camera.position.x += S.shake.x; camera.position.y += S.shake.y;
-  camera.fov += (68 + as * 14 + (S.boostT > 0 ? 8 : 0) - camera.fov) * .05;
+  camera.fov += (CTRL.fov + as * 14 + (S.boostT > 0 ? 8 : 0) - camera.fov) * .05;
   camera.updateProjectionMatrix();
 }
 
@@ -548,15 +609,19 @@ function renderLoop() {
   nitroRef.val = S.nitro;
 
   pollGamepad();
+  S.steerMul = CTRL.steer; S.steerInv = CTRL.invert;
 
   const phResult = updatePhysics(dt, S, ALL_CARS[selCarIdx], K, world.colls, nitroRef, audio, CFG.sfx, particles, THREE, GFX, world.boostPads);
   S.nitro = nitroRef.val;
+
+  // Skid marks while drifting
+  if (GFX.part && S.isDrift && Math.abs(S.spd) > .4) layStripe();
 
   recordRaceFrame();
   if (performance.now() - lastStatsFlush > 2000) { lastStatsFlush = performance.now(); flushStats(); }
 
   updateAiCars(dt);
-  if (RACE.mode === 'circuit' && aiCars.length) computePosition();
+  if ((RACE.mode === 'circuit' || RACE.mode === 'championship') && aiCars.length) computePosition();
 
   // Ghost record/replay
   if (S.curLap > 0) {
@@ -593,6 +658,7 @@ function renderLoop() {
 
   spawnCarParticles();
   particles.update(dt, GFX.partMax);
+  fadeSkids(dt);
   updateCam();
   updateHUD(S, GFX);
   updateMinimap(document.getElementById('mmC').getContext('2d'), world.trackPts, S.p, S.a, world.boostPads,
@@ -605,10 +671,21 @@ function renderLoop() {
 
 // ========== RACE START ==========
 async function beginRace() {
+  // Championship: fresh start from the menu resets the series; mid-series continues.
+  if (RACE.mode === 'championship') {
+    if (!RACE._champContinue) {
+      CHAMP.active = true; CHAMP.round = 0; CHAMP.pts = { player: 0, ai: [0, 0, 0] }; CHAMP.order = [0, 1, 2];
+    }
+    const idx = CHAMP.order[CHAMP.round];
+    if (idx !== selTrackIdx) { selTrackIdx = idx; world.generate(THREE, scene, GFX, idx); }
+  }
+  RACE._champContinue = false;
+
   document.getElementById('mainMenu').style.display = 'none';
   document.getElementById('raceResults').style.display = 'none';
   document.getElementById('hud').style.display = 'block';
 
+  clearSkids();
   buildCar();
   resetCarPos();
   Object.assign(S, {
@@ -623,7 +700,7 @@ async function beginRace() {
   S.v.set(0, 0, 0); nitroRef.val = 100;
   if (carObj) { carObj.group.position.copy(S.p); carObj.group.rotation.y = S.a; }
 
-  spawnAiCars(RACE.mode === 'circuit' ? 3 : 0);
+  spawnAiCars(RACE.mode === 'circuit' || RACE.mode === 'championship' ? 3 : 0);
   ghostRecording = []; ghostPtr = 0;
   if (ghostObj) ghostObj.visible = false;
 
@@ -655,39 +732,86 @@ async function beginRace() {
   lastStatsFlush = performance.now();
 }
 
+function finalOrder() {
+  const racers = [{ id: 'player', prog: S.totalLaps + world.trackFrac(S.p) }];
+  aiCars.forEach((ai, i) => racers.push({ id: 'ai', aiIdx: i, prog: ai.lap + ai.targetIdx / world.trackPts.length }));
+  racers.sort((a, b) => b.prog - a.prog);
+  return racers;
+}
+
+function champStandingsHTML() {
+  const rows = [{ name: 'אתה', pts: CHAMP.pts.player, me: true }];
+  CHAMP.pts.ai.forEach((p, i) => rows.push({ name: 'יריב ' + (i + 1), pts: p }));
+  rows.sort((a, b) => b.pts - a.pts);
+  const medal = ['🥇', '🥈', '🥉', '4.'];
+  return rows.map((r, i) => `<div style="${r.me ? 'color:#ffd700;font-weight:700' : ''}">${medal[i] || (i + 1 + '.')} ${r.name} — ${r.pts} נק'</div>`).join('');
+}
+
 async function finishRace() {
   if (RACE.finished) return;
   RACE.finished = true; RACE.active = false; running = false;
   audio.muteEngine(); audio.stopMusic();
 
   const totalMs = performance.now() - RACE.startTime;
-  let place = 1;
-  if (RACE.mode === 'circuit') { computePosition(); place = S.racePos; }
+  const rrPrimary = document.getElementById('rrPrimary');
+  let place = 1, coins = 0;
 
-  // Rewards
-  let coins = 0;
-  if (RACE.mode === 'circuit') coins = place === 1 ? 250 : place === 2 ? 150 : place === 3 ? 100 : 60;
-  else if (RACE.mode === 'timetrial') {
-    const userData = await getUserData();
-    const prevBest = userData.bestLapByTrack[world.getTrack().id];
-    coins = 80 + (S.bestLap < Infinity && (!prevBest || S.bestLap / 1000 <= prevBest) ? 120 : 0);
+  if (RACE.mode === 'championship') {
+    const order = finalOrder();
+    place = order.findIndex(r => r.id === 'player') + 1;
+    order.forEach((r, pos) => {
+      const pts = CHAMP_PTS[pos] || 0;
+      if (r.id === 'player') CHAMP.pts.player += pts; else CHAMP.pts.ai[r.aiIdx] += pts;
+    });
+    coins = 40 + (place === 1 ? 60 : place === 2 ? 30 : 0);
+
+    const isLast = CHAMP.round >= CHAMP.order.length - 1;
+    if (isLast) {
+      const standings = [{ name: 'player', pts: CHAMP.pts.player }, ...CHAMP.pts.ai.map(p => ({ name: 'ai', pts: p }))].sort((a, b) => b.pts - a.pts);
+      const champWon = standings[0].name === 'player' && standings[0].pts >= Math.max(...CHAMP.pts.ai, 0);
+      coins += champWon ? 300 : 100;
+      CHAMP.active = false;
+      document.getElementById('rrPlace').textContent = champWon ? '🏆 אלוף!' : '🏁 האליפות הסתיימה';
+      if (rrPrimary) { rrPrimary.textContent = 'RACE AGAIN'; rrPrimary.setAttribute('onclick', 'G.raceAgain()'); }
+      if (champWon) audio.sfx('ach'); else audio.sfx('lap');
+    } else {
+      document.getElementById('rrPlace').textContent = `🏆 סבב ${CHAMP.round + 1}/${CHAMP.order.length} — מקום ${place}`;
+      if (rrPrimary) { rrPrimary.textContent = 'NEXT RACE →'; rrPrimary.setAttribute('onclick', 'G.nextChampRace()'); }
+      audio.sfx('lap');
+    }
+    await flushStats({ coins });
+    document.getElementById('rrTime').textContent = 'זמן: ' + fmtTime(totalMs);
+    document.getElementById('rrBest').innerHTML = champStandingsHTML();
+    document.getElementById('rrCoins').textContent = '🪙 +' + coins;
+  } else {
+    if (rrPrimary) { rrPrimary.textContent = 'RACE AGAIN'; rrPrimary.setAttribute('onclick', 'G.raceAgain()'); }
+    if (RACE.mode === 'circuit') { computePosition(); place = S.racePos; coins = place === 1 ? 250 : place === 2 ? 150 : place === 3 ? 100 : 60; }
+    else if (RACE.mode === 'timetrial') {
+      const userData = await getUserData();
+      const prevBest = userData.bestLapByTrack[world.getTrack().id];
+      coins = 80 + (S.bestLap < Infinity && (!prevBest || S.bestLap / 1000 <= prevBest) ? 120 : 0);
+    }
+    await flushStats({ coins });
+    const placeText = RACE.mode === 'circuit'
+      ? (place === 1 ? '🥇 מקום 1' : place === 2 ? '🥈 מקום 2' : place === 3 ? '🥉 מקום 3' : 'מקום ' + place)
+      : '🏁 הושלם';
+    document.getElementById('rrPlace').textContent = placeText;
+    document.getElementById('rrTime').textContent = 'זמן כולל: ' + fmtTime(totalMs);
+    document.getElementById('rrBest').textContent = 'הקפה מהירה: ' + (S.bestLap < Infinity ? fmtTime(S.bestLap) : '—');
+    document.getElementById('rrCoins').textContent = '🪙 +' + coins;
+    if (RACE.mode === 'circuit' && place === 1) audio.sfx('ach'); else audio.sfx('lap');
   }
-  await flushStats({ coins });
-
-  // Results UI
-  const placeText = RACE.mode === 'circuit'
-    ? (place === 1 ? '🥇 מקום 1' : place === 2 ? '🥈 מקום 2' : place === 3 ? '🥉 מקום 3' : 'מקום ' + place)
-    : '🏁 הושלם';
-  document.getElementById('rrPlace').textContent = placeText;
-  document.getElementById('rrTime').textContent = 'זמן כולל: ' + fmtTime(totalMs);
-  document.getElementById('rrBest').textContent = 'הקפה מהירה: ' + (S.bestLap < Infinity ? fmtTime(S.bestLap) : '—');
-  document.getElementById('rrCoins').textContent = '🪙 +' + coins;
-  if (RACE.mode === 'circuit' && place === 1) audio.sfx('ach');
-  else audio.sfx('lap');
 
   document.getElementById('hud').style.display = 'none';
   document.getElementById('gc').style.filter = '';
   document.getElementById('raceResults').style.display = 'flex';
+}
+
+function nextChampRace() {
+  document.getElementById('raceResults').style.display = 'none';
+  CHAMP.round++;
+  RACE._champContinue = true;
+  beginRace();
 }
 
 function fmtTime(ms) {
@@ -710,7 +834,7 @@ function raceAgain() {
 
 async function toMenu() {
   await flushStats();
-  paused = false; running = false; RACE.active = false;
+  paused = false; running = false; RACE.active = false; CHAMP.active = false;
   audio.stopMusic(); audio.muteEngine();
   document.getElementById('pauseM').style.display = 'none';
   document.getElementById('raceResults').style.display = 'none';
@@ -725,10 +849,11 @@ async function toMenu() {
 
 // ========== BOOT ==========
 async function boot() {
-  await loadSettings(GFX, CFG);
+  await loadSettings(GFX, CFG, CTRL);
   initMenuParticles();
   init3D();
   applyBloomState();
+  applyCtrlUI();
   if (renderer) {
     renderer.shadowMap.enabled = GFX.shad;
     renderer.setPixelRatio(Math.min(GFX.pixRatio, window.devicePixelRatio));

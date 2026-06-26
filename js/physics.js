@@ -46,7 +46,9 @@ export function updatePhysics(dt, S, carCfg, keys, colls, nitroRef, audioMod, sf
   if (Math.abs(S.spd) < .001) S.spd = 0;
   S.spd = Math.max(-.8, Math.min(C.ms * (S.boostT > 0 ? 1.3 : 1), S.spd));
 
-  // Steering
+  // Steering (with user sensitivity + invert)
+  if (S.steerInv) trn = -trn;
+  trn *= (S.steerMul || 1);
   const sf = Math.min(Math.abs(S.spd) / 1.2, 1);
   const ta = trn * .03 * sf * accelMult;
 

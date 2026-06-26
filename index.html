@@ -64,7 +64,7 @@
       <div class="stitle">SELECT YOUR RIDE</div>
       <div class="cargrid" id="carGrid"></div>
 
-      <div class="seclabel">🏁 מסלול</div>
+      <div class="seclabel" id="trackLabel">🏁 מסלול</div>
       <div class="trackgrid" id="trackGrid"></div>
 
       <div class="seclabel">מצב</div>
@@ -72,6 +72,14 @@
         <button class="seg on" data-v="circuit" onclick="G.setMode('circuit')">מירוץ</button>
         <button class="seg" data-v="timetrial" onclick="G.setMode('timetrial')">נגד הזמן</button>
         <button class="seg" data-v="free" onclick="G.setMode('free')">חופשי</button>
+        <button class="seg" data-v="championship" onclick="G.setMode('championship')">🏆 אליפות</button>
+      </div>
+
+      <div class="seclabel">קושי יריבים</div>
+      <div class="segrow" id="diffRow">
+        <button class="seg" data-v="easy" onclick="G.setDiff('easy')">קל</button>
+        <button class="seg on" data-v="medium" onclick="G.setDiff('medium')">בינוני</button>
+        <button class="seg" data-v="hard" onclick="G.setDiff('hard')">קשה</button>
       </div>
 
       <div class="seclabel">הקפות</div>
@@ -141,6 +149,10 @@
       <div class="srow"><span>Rain Particles</span><button class="stog on" id="tRain" onclick="G.togS(this)"></button></div>
       <div class="srow"><span>Debug Overlay (F3)</span><button class="stog" id="tDbg" onclick="G.togS(this)"></button></div>
       <div class="srow"><span>Volume</span><input type="range" class="sslider" min="0" max="100" value="60" oninput="G.setVol(this.value)"></div>
+      <div style="font-family:'Orbitron',monospace;font-size:9px;color:rgba(255,255,255,.4);letter-spacing:2px;margin:12px 0 2px">DRIVING</div>
+      <div class="srow"><span>FOV <b id="fovVal" style="color:#ffaa00">68</b></span><input type="range" class="sslider" id="fovSlider" min="55" max="90" value="68" oninput="G.setFov(this.value)"></div>
+      <div class="srow"><span>Steering <b id="steerVal" style="color:#ffaa00">1.00×</b></span><input type="range" class="sslider" id="steerSlider" min="50" max="150" value="100" oninput="G.setSteer(this.value)"></div>
+      <div class="srow"><span>Invert Steering</span><button class="stog" id="tInv" onclick="G.setInvert(this)"></button></div>
       <button class="backb" onclick="G.showP('pMain')">← BACK</button>
     </div>
 
@@ -182,7 +194,7 @@
     <div class="rrTime" id="rrTime"></div>
     <div class="rrBest" id="rrBest"></div>
     <div class="rrCoins" id="rrCoins"></div>
-    <button class="mbtn pri" onclick="G.raceAgain()" style="pointer-events:all">RACE AGAIN</button>
+    <button class="mbtn pri" id="rrPrimary" onclick="G.raceAgain()" style="pointer-events:all">RACE AGAIN</button>
     <button class="mbtn" onclick="G.toMenu()" style="pointer-events:all">MENU</button>
   </div>
 </div>

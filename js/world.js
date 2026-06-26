@@ -141,7 +141,12 @@ function mkRoad(THREE, root) {
     const t = (i / T_N) * Math.PI * 2, r = trackR(t) - T_W;
     sh.lineTo(Math.cos(t) * r, Math.sin(t) * r);
   }
-  const rm = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshStandardMaterial({ color: CFG_T.road, roughness: .55, metalness: .2 }));
+  // Rainy tracks get a wet, glossy road (low roughness, high metalness → streaky reflections)
+  const wet = CFG_T.defaultRain > 0;
+  const rm = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshStandardMaterial({
+    color: wet ? new THREE.Color(CFG_T.road).multiplyScalar(.7).getHex() : CFG_T.road,
+    roughness: wet ? .18 : .55, metalness: wet ? .85 : .2
+  }));
   rm.rotation.x = -Math.PI / 2; rm.position.y = .03; rm.receiveShadow = true; root.add(rm);
 
   // Center dashes

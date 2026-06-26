@@ -53,11 +53,12 @@ export function setGfxPreset(preset, gfx, renderer, scene) {
   saveSettings(gfx, null);
 }
 
-export async function loadSettings(gfx, cfg) {
+export async function loadSettings(gfx, cfg, ctrl) {
   const saved = await dbGet('settings_global');
   if (!saved) return;
   if (saved.gfx) Object.assign(gfx, saved.gfx);
   if (saved.cfg) Object.assign(cfg, saved.cfg);
+  if (saved.ctrl && ctrl) Object.assign(ctrl, saved.ctrl);
   // Sync toggles UI
   ['tSfx','tEng','tShd','tPrt','tShk','tSpd','tBlm','tRain'].forEach(id => {
     const el = document.getElementById(id); if (!el) return;
@@ -68,12 +69,13 @@ export async function loadSettings(gfx, cfg) {
 }
 
 let saveTimer = null;
-export function saveSettings(gfx, cfg) {
+export function saveSettings(gfx, cfg, ctrl) {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     const cur = await dbGet('settings_global') || {};
     if (gfx) cur.gfx = { ...(cur.gfx || {}), ...gfx };
     if (cfg) cur.cfg = { ...(cur.cfg || {}), ...cfg };
+    if (ctrl) cur.ctrl = { ...(cur.ctrl || {}), ...ctrl };
     await dbSet('settings_global', cur);
   }, 300);
 }

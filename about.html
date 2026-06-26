@@ -16,8 +16,11 @@ p{max-width:500px;text-align:center;color:rgba(255,255,255,.5);line-height:1.7;f
 .version{font-family:'Orbitron',monospace;font-size:11px;color:rgba(255,255,255,.2);letter-spacing:2px;margin-top:8px}
 .tech{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:12px 0}
 .tech span{font-family:'Orbitron',monospace;font-size:9px;padding:6px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:rgba(255,255,255,.5);letter-spacing:1px}
-.donate-btn{display:inline-block;margin:20px 0;padding:14px 40px;font-family:'Orbitron',monospace;font-size:13px;letter-spacing:2px;background:linear-gradient(135deg,rgba(255,170,0,.2),rgba(255,130,0,.3));color:#ffcc00;border:1px solid rgba(255,170,0,.4);border-radius:8px;text-decoration:none;transition:all .3s;text-transform:uppercase}
+.donate-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:18px 0}
+.donate-btn{display:inline-block;padding:14px 36px;font-family:'Orbitron',monospace;font-size:13px;letter-spacing:2px;background:linear-gradient(135deg,rgba(255,170,0,.2),rgba(255,130,0,.3));color:#ffcc00;border:1px solid rgba(255,170,0,.4);border-radius:8px;text-decoration:none;transition:all .3s;text-transform:uppercase}
 .donate-btn:hover{box-shadow:0 0 30px rgba(255,170,0,.2);background:linear-gradient(135deg,rgba(255,170,0,.3),rgba(255,130,0,.45))}
+.patreon-btn{background:linear-gradient(135deg,rgba(255,66,77,.22),rgba(232,40,52,.32));color:#ff6b73;border-color:rgba(255,66,77,.45)}
+.patreon-btn:hover{box-shadow:0 0 30px rgba(255,66,77,.25);background:linear-gradient(135deg,rgba(255,66,77,.34),rgba(232,40,52,.46))}
 .back{margin-top:30px;font-size:13px;color:rgba(255,255,255,.3);text-decoration:none;letter-spacing:1px}
 .back:hover{color:rgba(255,255,255,.7)}
 .credits{margin-top:20px;text-align:center;color:rgba(255,255,255,.25);font-size:12px;line-height:1.8}
@@ -65,9 +68,13 @@ p{max-width:500px;text-align:center;color:rgba(255,255,255,.5);line-height:1.7;f
 
 <div class="divider"></div>
 
-<h2>☕ תמכו ביוצר</h2>
+<h2>❤️ תמכו ביוצר</h2>
 <p>נהנים מהמשחק? תרומה קטנה תעזור לי להמשיך לפתח ולהוסיף תכונות חדשות!</p>
-<a href="https://buymeacoffee.com" target="_blank" class="donate-btn">☕ BUY ME A COFFEE</a>
+<!-- TODO: replace the Patreon href with the creator's exact page URL -->
+<div class="donate-row">
+  <a href="https://www.patreon.com/" target="_blank" rel="noopener" class="donate-btn patreon-btn">🅿️ PATREON</a>
+  <a href="https://buymeacoffee.com" target="_blank" rel="noopener" class="donate-btn">☕ BUY ME A COFFEE</a>
+</div>
 
 <div class="divider"></div>
 

@@ -209,6 +209,7 @@ canvas#gc{display:block;width:100vw;height:100vh;position:fixed;top:0;left:0}
 .trackcard{width:120px;padding:10px 6px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px;cursor:pointer;transition:all .25s;text-align:center}
 .trackcard:hover{border-color:rgba(255,80,30,.4)}
 .trackcard.sel{border-color:rgba(255,80,30,.6);background:rgba(255,80,30,.08);box-shadow:0 0 14px rgba(255,50,0,.15)}
+.trackcard.dim{opacity:.45;cursor:default;pointer-events:none}
 .trackcard .ti{font-size:24px}
 .trackcard .tn{font-family:'Orbitron',monospace;font-size:8px;color:rgba(255,255,255,.7);letter-spacing:.5px;margin-top:3px}
 .segrow{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
@@ -224,7 +225,7 @@ canvas#gc{display:block;width:100vw;height:100vh;position:fixed;top:0;left:0}
 .rrBox{display:flex;flex-direction:column;align-items:center;animation:mfade .5s ease}
 .rrPlace{font-family:'Bebas Neue',sans-serif;font-size:64px;color:#ffd700;text-shadow:0 0 40px rgba(255,200,0,.5);letter-spacing:3px;margin-bottom:8px}
 .rrTime{font-family:'Orbitron',monospace;font-size:16px;color:rgba(255,255,255,.85);margin:4px}
-.rrBest{font-family:'Orbitron',monospace;font-size:13px;color:rgba(255,255,255,.5);margin:2px}
+.rrBest{font-family:'Orbitron',monospace;font-size:13px;color:rgba(255,255,255,.5);margin:2px;line-height:1.7;text-align:center}
 .rrCoins{font-family:'Orbitron',monospace;font-size:22px;color:#ffcc00;text-shadow:0 0 12px rgba(255,200,0,.4);margin:12px 0 18px}
 
 @media (pointer:coarse), (max-width:700px) {
